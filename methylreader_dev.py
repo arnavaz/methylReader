@@ -6,10 +6,41 @@ import sys
 import pysam
 import os
 import re
+
+from argparse import ArgumentParser
+
+
+
+parser = ArgumentParser()
+
+parser.add_argument("-b", "--bamfile", dest="bam",  help="The bam file output from bismark", type=str)
+
+parser.add_argument("-L", "--interval", dest="interval",  help= "The genomic interval", type=str)
+
+parser.add_argument("-wd", "--working_dir", dest="cwd",  help="Working directory where all the bam files are ", type=str)
+
+parser.add_argument("-o", "--output_dir",  dest="output", help="Output directory", type=str)
+
+args = parser.parse_args()
+
+file = args.bam
+target = args.interval
+cdir = args.cwd
+outputdir = args.output
+
+print "Input bam is", file
+print "Interval is ", target
+print "Output direcotry is ", outputdir
+print "Working directory is ", cdir
+
+
+
 #######################
 #					  #
 #     functions 	  #	
 #######################
+
+
 def top_n(word_list, n):
     word_counter = {}
     for word in word_list:
@@ -87,41 +118,30 @@ def most_common(l):
             maxitem = x
     return maxitem
     
-    
-    
-    
-    
-cmdargs = str(sys.argv)
-file = sys.argv[1]
-bedfile = sys.argv[2]
-print bedfile, file
-bam =  os.path.basename(file)
-dir = os.path.dirname(file)
-print dir
-os.chdir(dir)
-for interval in open(bedfile,'r'): bed = interval.split("\t")
-print interval
-print "bed file is :", bed
-chrom = bed[0]
-bedS = int(bed[1])
-bedE = int(bed[2])
+
 ########
+
+dir= os.path.dirname(file) 
+string = re.split('[: -]',target)
+print string
+chrom = string[0]
+bedS = int(string[1])
+bedE = int(string[2])
+bam = os.path.basename(file)
+
+
 allReadsSites =[]
 allReads = []
 lenAllsites = []
-
-
+ 
 i = 0
+
 os.chdir(dir)
-samfile = pysam.AlignmentFile(bam, "rb")
+samfile = pysam.AlignmentFile(file, "rb")
 
 for read in samfile.fetch(chrom, bedS,bedE):
-#      if read.is_read1:
     		
-     		#print read.query_qualities
-     		#print read.get_tag("XM")
-     	    
-    		methylPos=methylpos(read.get_tag("XM"))
+     		methylPos=methylpos(read.get_tag("XM"))
     		unmethylPos = unmethylpos(read.get_tag("XM"))
     		
     		sites = addLocus(methylPos, read.reference_start)
@@ -153,21 +173,19 @@ allReadsSites.sort()
 j= 0
 k = 0
 name = re.sub("_R1_001_bismark_bt2.sorted.bam","", bam)
-file2write = name + ".methylcounts.txt"
-file3write = name + "metrics.txt"
+file2write = outputdir + '/'+ name + ".methylcounts.txt"
+file3write = outputdir + '/'+ name + "_metrics.txt"
 w = open(file2write,'w')
 q = open(file3write, 'w')
-
 string = 'H' + '\t'+ 'X'+ '\t'+ 'h' + '\t'+ 'x' + '\t'+ '\n'
 str1 = 'SeqRead'+'\t'+ '\t'.join(chrom + str(e)  for e in top_nn)  + '\t'+ 'total' + '\n' 
 w.write(str1)
 q.write(string)
 print chrom, bedS, bedE
+
 samfile = pysam.AlignmentFile(bam, "rb" )
 for read in samfile.fetch(chrom, bedS,bedE):
 
-
-	
 	vec =[]
 	for jj in range(len(top_nn)):vec.append(0)
 	methylPos=methylpos(read.get_tag("XM"))
@@ -196,7 +214,10 @@ for read in samfile.fetch(chrom, bedS,bedE):
 	total = str(sumvec)
 	interval =  chrom + ':' + str(bedS)+'-'+str(bedE) 
 	str3 =interval + '\t' +  vec2write+ '\t' + total + '\n'
+	
 	str4 =  a + '\t' + b +  '\t' +  c +  '\t' + d  + '\n'
+	print str4
+	print str3
 	q.write(str4)
 	w.write(str3)
 samfile.close()
