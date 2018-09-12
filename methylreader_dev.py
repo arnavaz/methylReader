@@ -35,9 +35,8 @@ print "Working directory is ", cdir
 
 
 
-#######################
-#					  #
-#     functions 	  #	
+#######################					  
+#     functions 	
 #######################
 
 
